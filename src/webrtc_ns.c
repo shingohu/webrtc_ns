@@ -2,8 +2,6 @@
 #include "noise_suppression.h"
 
 NsHandle *handle = NULL;
-uint32_t sampleRate = 0;
-
 
 FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level) {
 
@@ -17,7 +15,6 @@ FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level) {
         return ret;
     }
     handle = nsHandle;
-    sampleRate = sample_rate;
     return 0;
 }
 
@@ -49,11 +46,4 @@ FFI_PLUGIN_EXPORT int webrtc_ns_process(int16_t *src_audio_data, int64_t length)
         return 0;
     }
     return -1;
-}
-
-void printArray(int *arr, int size) {
-    for (int i = 0; i < size; i++) {
-        printf("%d ", *(arr + i));
-    }
-    printf("\n");
 }

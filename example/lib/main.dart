@@ -39,7 +39,7 @@ class _MyAppState extends State<MyApp> {
               children: [
                 TextButton(
                     onPressed: () {
-                      WebrtcNS.init(16000, NSLevel.VeryHigh);
+                      WebrtcNS.init(16000, level: NSLevel.VeryHigh);
                     },
                     child: Text("初始化")),
                 TextButton(

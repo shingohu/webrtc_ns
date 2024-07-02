@@ -35,8 +35,10 @@ class WebrtcNS {
   static NSLevel? _level;
 
   ///初始化
-  static bool init(int sampleRate, NSLevel level) {
-    if (_sampleRate == sampleRate || _level == level) {
+  ///[sampleRate]音频数据采样率
+  ///[level]降噪级别,默认为High
+  static bool init(int sampleRate, {NSLevel level = NSLevel.High}) {
+    if (_sampleRate != sampleRate || _level != level) {
       destroy();
     }
     if (!_hasInit) {
