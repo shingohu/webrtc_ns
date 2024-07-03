@@ -4,14 +4,16 @@
 NsHandle *handle = NULL;
 
 FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level) {
-
+    webrtc_ns_destroy();
     NsHandle *nsHandle = WebRtcNs_Create();
-    int ret;
-    if ((ret = WebRtcNs_Init(nsHandle, sample_rate))) {
+    int ret = WebRtcNs_Init(nsHandle, sample_rate);
+    if (ret != 0) {
+        WebRtcNs_Free(nsHandle);
         return ret;
     }
-
-    if ((ret = WebRtcNs_set_policy(nsHandle, level))) {
+    ret = WebRtcNs_set_policy(nsHandle, level);
+    if (ret != 0) {
+        WebRtcNs_Free(nsHandle);
         return ret;
     }
     handle = nsHandle;
@@ -21,6 +23,7 @@ FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level) {
 FFI_PLUGIN_EXPORT void webrtc_ns_destroy() {
     if (handle != NULL) {
         WebRtcNs_Free(handle);
+        handle = NULL;
     }
 }
 
