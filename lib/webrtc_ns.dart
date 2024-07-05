@@ -28,50 +28,38 @@ final WebrtcNsBindings _bindings = WebrtcNsBindings(_dylib);
 enum NSLevel { Low, Moderate, High, VeryHigh }
 
 class WebrtcNS {
-  WebrtcNS._();
+  final Pointer<Void> _nullptr = Pointer.fromAddress(0);
 
-  static bool _hasInit = false;
-  static int? _sampleRate;
-  static NSLevel? _level;
+  Pointer<Void>? _handle;
+
+  bool get _hasInit => _handle != null && _handle != _nullptr;
 
   ///初始化
   ///[sampleRate]音频数据采样率
   ///[level]降噪级别,默认为High
-  static bool init(int sampleRate, {NSLevel level = NSLevel.High}) {
-    if (_hasInit) {
-      if (_sampleRate != sampleRate || _level != level) {
-        destroy();
-      }
-    }
-    if (!_hasInit) {
-      int ret = _bindings.webrtc_ns_init(sampleRate, level.index);
-      _hasInit = ret == 0;
-      _sampleRate = sampleRate;
-      _level = level;
-    }
-    return _hasInit;
+  void init(int sampleRate, {NSLevel level = NSLevel.High}) {
+    release();
+    _handle = _bindings.webrtc_ns_init(sampleRate, level.index);
   }
 
-  ///销毁
-  static void destroy() {
+  ///释放
+  void release() {
     if (_hasInit) {
-      _bindings.webrtc_ns_destroy();
-      _hasInit = false;
-      _sampleRate = null;
-      _level = null;
+      _bindings.webrtc_ns_destroy(_handle!);
+      _handle = null;
     }
   }
 
   ///处理byte数组,如果没有初始化,或者处理失败返回原始数据
   ///如果处理成功 返回处理后的数据
-  static Uint8List process(Uint8List bytes) {
+  Uint8List process(Uint8List bytes) {
     if (_hasInit) {
       return ffi.using((arena) {
         Int16List shorts = _bytesToShort(bytes);
         int length = shorts.length;
         final ptr = arena<Int16>(length);
         ptr.asTypedList(length).setAll(0, shorts);
-        int ret = _bindings.webrtc_ns_process(ptr, length);
+        int ret = _bindings.webrtc_ns_process(_handle!, ptr, length);
         if (ret == 0) {
           return _shortToBytes(ptr.asTypedList(length));
         } else {

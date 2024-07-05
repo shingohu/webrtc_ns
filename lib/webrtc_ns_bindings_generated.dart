@@ -27,7 +27,7 @@ class WebrtcNsBindings {
           lookup)
       : _lookup = lookup;
 
-  int webrtc_ns_init(
+  ffi.Pointer<ffi.Void> webrtc_ns_init(
     int sample_rate,
     int level,
   ) {
@@ -37,35 +37,42 @@ class WebrtcNsBindings {
     );
   }
 
-  late final _webrtc_ns_initPtr =
-      _lookup<ffi.NativeFunction<ffi.Int Function(ffi.Int, ffi.Int)>>(
-          'webrtc_ns_init');
+  late final _webrtc_ns_initPtr = _lookup<
+          ffi.NativeFunction<ffi.Pointer<ffi.Void> Function(ffi.Int, ffi.Int)>>(
+      'webrtc_ns_init');
   late final _webrtc_ns_init =
-      _webrtc_ns_initPtr.asFunction<int Function(int, int)>();
+      _webrtc_ns_initPtr.asFunction<ffi.Pointer<ffi.Void> Function(int, int)>();
 
   int webrtc_ns_process(
+    ffi.Pointer<ffi.Void> handle,
     ffi.Pointer<ffi.Int16> src_audio_data,
     int length,
   ) {
     return _webrtc_ns_process(
+      handle,
       src_audio_data,
       length,
     );
   }
 
   late final _webrtc_ns_processPtr = _lookup<
-          ffi
-          .NativeFunction<ffi.Int Function(ffi.Pointer<ffi.Int16>, ffi.Int64)>>(
-      'webrtc_ns_process');
-  late final _webrtc_ns_process = _webrtc_ns_processPtr
-      .asFunction<int Function(ffi.Pointer<ffi.Int16>, int)>();
+      ffi.NativeFunction<
+          ffi.Int Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Int16>,
+              ffi.Int64)>>('webrtc_ns_process');
+  late final _webrtc_ns_process = _webrtc_ns_processPtr.asFunction<
+      int Function(ffi.Pointer<ffi.Void>, ffi.Pointer<ffi.Int16>, int)>();
 
-  void webrtc_ns_destroy() {
-    return _webrtc_ns_destroy();
+  void webrtc_ns_destroy(
+    ffi.Pointer<ffi.Void> handle,
+  ) {
+    return _webrtc_ns_destroy(
+      handle,
+    );
   }
 
   late final _webrtc_ns_destroyPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function()>>('webrtc_ns_destroy');
+      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Pointer<ffi.Void>)>>(
+          'webrtc_ns_destroy');
   late final _webrtc_ns_destroy =
-      _webrtc_ns_destroyPtr.asFunction<void Function()>();
+      _webrtc_ns_destroyPtr.asFunction<void Function(ffi.Pointer<ffi.Void>)>();
 }

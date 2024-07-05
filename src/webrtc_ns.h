@@ -17,11 +17,11 @@
 #define FFI_PLUGIN_EXPORT
 #endif
 
-FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level);
+FFI_PLUGIN_EXPORT void *webrtc_ns_init(int sample_rate, int level);
 
-FFI_PLUGIN_EXPORT int webrtc_ns_process(int16_t *src_audio_data, int64_t length);
+FFI_PLUGIN_EXPORT int webrtc_ns_process(void *handle, int16_t *src_audio_data, int64_t length);
 
-FFI_PLUGIN_EXPORT void webrtc_ns_destroy();
+FFI_PLUGIN_EXPORT void webrtc_ns_destroy(void *handle);
 
 
 

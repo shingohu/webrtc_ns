@@ -1,26 +1,23 @@
 #include "webrtc_ns.h"
 #include "noise_suppression.h"
 
-NsHandle *handle = NULL;
 
-FFI_PLUGIN_EXPORT int webrtc_ns_init(int sample_rate, int level) {
-    webrtc_ns_destroy();
+FFI_PLUGIN_EXPORT void *webrtc_ns_init(int sample_rate, int level) {
     NsHandle *nsHandle = WebRtcNs_Create();
     int ret = WebRtcNs_Init(nsHandle, sample_rate);
     if (ret != 0) {
         WebRtcNs_Free(nsHandle);
-        return ret;
+        return NULL;
     }
     ret = WebRtcNs_set_policy(nsHandle, level);
     if (ret != 0) {
         WebRtcNs_Free(nsHandle);
-        return ret;
+        return NULL;
     }
-    handle = nsHandle;
-    return 0;
+    return nsHandle;
 }
 
-FFI_PLUGIN_EXPORT void webrtc_ns_destroy() {
+FFI_PLUGIN_EXPORT void webrtc_ns_destroy(void *handle) {
     if (handle != NULL) {
         WebRtcNs_Free(handle);
         handle = NULL;
@@ -28,7 +25,7 @@ FFI_PLUGIN_EXPORT void webrtc_ns_destroy() {
 }
 
 
-FFI_PLUGIN_EXPORT int webrtc_ns_process(int16_t *src_audio_data, int64_t length) {
+FFI_PLUGIN_EXPORT int webrtc_ns_process(void *handle, int16_t *src_audio_data, int64_t length) {
     if (handle != NULL) {
         NoiseSuppressionC *ns = (NoiseSuppressionC *) handle;
 
