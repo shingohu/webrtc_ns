@@ -16,6 +16,10 @@ final DynamicLibrary _dylib = () {
   if (Platform.isAndroid || Platform.isLinux) {
     return DynamicLibrary.open('lib$_libName.so');
   }
+  if (Platform.operatingSystem == "ohos") {
+    return DynamicLibrary.open('lib$_libName.so');
+  }
+
   if (Platform.isWindows) {
     return DynamicLibrary.open('$_libName.dll');
   }

@@ -1,0 +1,10 @@
+{
+  "module": {
+    "name": "webrtc_ns",
+    "type": "har",
+    "deviceTypes": [
+      "default",
+      "tablet",
+    ]
+  }
+}

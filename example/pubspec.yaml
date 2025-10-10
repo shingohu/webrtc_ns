@@ -47,6 +47,14 @@ dependencies:
 
 dev_dependencies:
 
+
+dependency_overrides:
+# harmony os
+#  path_provider:
+#    git:
+#      url: "https://gitee.com/openharmony-sig/flutter_packages.git"
+#      path: "packages/path_provider/path_provider"
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
