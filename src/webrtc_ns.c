@@ -25,7 +25,7 @@ FFI_PLUGIN_EXPORT void webrtc_ns_destroy(void *handle) {
 
 
 FFI_PLUGIN_EXPORT int webrtc_ns_process(void *handle, int16_t *src_audio_data, int64_t length) {
-    if (handle != NULL) {
+    if (handle != NULL && length >0) {
         NoiseSuppressionC *ns = (NoiseSuppressionC *) handle;
 
         //noise suppression

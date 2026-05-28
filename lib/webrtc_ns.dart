@@ -45,9 +45,6 @@ final class WebrtcNS {
   void init(int sampleRate, {NSLevel level = NSLevel.High}) {
     release();
     _handle = _bindings.webrtc_ns_init(sampleRate, level.index);
-    if (_hasInit) {
-      _ensureBuffer(sampleRate ~/ 50); // typical 20ms frame
-    }
   }
 
   void release() {
@@ -55,6 +52,21 @@ final class WebrtcNS {
       _bindings.webrtc_ns_destroy(_handle!);
       _handle = null;
     }
+    freeBuffer();
+  }
+
+  ///预分配内存
+  void _ensureBuffer(int samples) {
+    if (_bufferSamples == samples && _buffer != null) return;
+    if (_buffer != null) {
+      ffi.calloc.free(_buffer!);
+    }
+    _buffer = ffi.malloc<Int16>(samples);
+    _bufferSamples = samples;
+  }
+
+  ///释放预分配内存
+  void freeBuffer() {
     if (_buffer != null) {
       ffi.calloc.free(_buffer!);
       _buffer = null;
@@ -62,53 +74,32 @@ final class WebrtcNS {
     }
   }
 
-  void _ensureBuffer(int samples) {
-    if (_bufferSamples >= samples) return;
-    if (_buffer != null) {
-      ffi.calloc.free(_buffer!);
-    }
-    _buffer = ffi.calloc<Int16>(samples);
-    _bufferSamples = samples;
-  }
-
-  /// Processes PCM data in-place. Zero allocations after warm-up.
-  ///
-  /// [pcmData] is interleaved 16-bit little-endian PCM. The processed audio
-  /// overwrites the input buffer. Returns true on success, false if not
-  /// initialized or processing failed.
-  bool processInPlace(Uint8List pcmData) {
-    if (!_hasInit) return false;
-
+  /// 处理PCM数据并返回处理后的数据
+  /// 注意由于webrtc ns每次只能处理10ms数据,所有这里需要传入的数据长度至少是10ms的倍数
+  Uint8List process(Uint8List pcmData) {
+    if (!_hasInit) return pcmData;
     final int samples = pcmData.length ~/ 2;
+    if (samples == 0) {
+      return pcmData;
+    }
     _ensureBuffer(samples);
-
+    Uint8List copyData = Uint8List.fromList(pcmData);
     // Zero-copy view of input as Int16
-    final Int16List input =
-        pcmData.buffer.asInt16List(pcmData.offsetInBytes, samples);
+    final Int16List input = copyData.buffer.asInt16List(copyData.offsetInBytes, samples);
     final Int16List native = _buffer!.asTypedList(samples);
 
     // Copy to pre-allocated native buffer
     native.setAll(0, input);
 
     final int ret = _bindings.webrtc_ns_process(_handle!, _buffer!, samples);
-    if (ret != 0) return false;
+    if (ret != 0) {
+      freeBuffer();
+      return pcmData;
+    }
 
     // Copy processed data back to the input buffer
-    final Uint8List nativeBytes =
-        Uint8List.view(native.buffer, 0, pcmData.length);
-    pcmData.setAll(0, nativeBytes);
-    return true;
-  }
-
-  /// Processes PCM bytes and returns processed data.
-  /// Prefer [processInPlace] for real-time audio to avoid allocations.
-  Uint8List process(Uint8List bytes) {
-    if (!_hasInit) return bytes;
-
-    final Uint8List copy = Uint8List.fromList(bytes);
-    if (processInPlace(copy)) {
-      return copy;
-    }
-    return bytes;
+    final Uint8List nativeBytes = Uint8List.view(native.buffer, 0, copyData.length);
+    copyData.setAll(0, nativeBytes);
+    return copyData;
   }
 }

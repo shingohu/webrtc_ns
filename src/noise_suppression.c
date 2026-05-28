@@ -826,6 +826,8 @@ int WebRtcNs_InitCore(NoiseSuppressionC *self, uint32_t fs) {
     memset(self->noise, 0, sizeof(float) * HALF_ANAL_BLOCKL);
     // Previous noise-spectrum.
     memset(self->noisePrev, 0, sizeof(float) * HALF_ANAL_BLOCKL);
+    // Parametric noise estimate.
+    memset(self->parametricNoise, 0, sizeof(float) * HALF_ANAL_BLOCKL);
     // Conservative noise spectrum estimate.
     memset(self->magnAvgPause, 0, sizeof(float) * HALF_ANAL_BLOCKL);
     // For estimation of HB in second pass.

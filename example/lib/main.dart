@@ -38,16 +38,15 @@ class _MyAppState extends State<MyApp> {
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 TextButton(
-                    onPressed: () {
-                      webrtcNS.init(16000, level: NSLevel.VeryHigh);
-                    },
-                    child: Text("初始化")),
-                TextButton(
                     onPressed: () async {
-                      ByteData byteData =
-                          await rootBundle.load("assets/test.pcm");
+                      ByteData byteData = await rootBundle.load("assets/test.pcm");
                       Uint8List bytes = byteData.buffer.asUint8List();
+                      Stopwatch stopwatch = Stopwatch()..start();
+                      webrtcNS.init(16000, level: NSLevel.VeryHigh);
                       bytes = webrtcNS.process(bytes);
+                      webrtcNS.release();
+                      stopwatch.stop();
+                      print("耗时:${stopwatch.elapsedMilliseconds}ms");
                       File? file = await _createCacheAudioFile("test");
                       if (file != null) {
                         file.writeAsBytes(bytes);
@@ -55,11 +54,6 @@ class _MyAppState extends State<MyApp> {
                       }
                     },
                     child: Text("降噪处理")),
-                TextButton(
-                    onPressed: () {
-                      webrtcNS.release();
-                    },
-                    child: Text("销毁")),
               ],
             ),
           ),
@@ -71,8 +65,7 @@ class _MyAppState extends State<MyApp> {
   ///创建PCM缓存
   Future<File?> _createCacheAudioFile(String prefix) async {
     DateTime time = DateTime.now();
-    String fileName =
-        prefix + "_" + time.millisecondsSinceEpoch.toString() + ".pcm";
+    String fileName = prefix + "_" + time.millisecondsSinceEpoch.toString() + ".pcm";
     String? path = (await getApplicationDocumentsDirectory()).path + '/audio';
 
     File file = File(path + "/" + fileName);
