@@ -20,7 +20,6 @@ FFI_PLUGIN_EXPORT void *webrtc_ns_init(int sample_rate, int level) {
 FFI_PLUGIN_EXPORT void webrtc_ns_destroy(void *handle) {
     if (handle != NULL) {
         WebRtcNs_Free(handle);
-        handle = NULL;
     }
 }
 

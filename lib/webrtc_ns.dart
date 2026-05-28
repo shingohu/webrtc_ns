@@ -31,62 +31,83 @@ final WebrtcNsBindings _bindings = WebrtcNsBindings(_dylib);
 
 enum NSLevel { Low, Moderate, High, VeryHigh }
 
-class WebrtcNS {
+final class WebrtcNS {
   final Pointer<Void> _nullptr = Pointer.fromAddress(0);
 
   Pointer<Void>? _handle;
 
+  /// Pre-allocated reusable native buffer for process() calls.
+  Pointer<Int16>? _buffer;
+  int _bufferSamples = 0;
+
   bool get _hasInit => _handle != null && _handle != _nullptr;
 
-  ///初始化
-  ///[sampleRate]音频数据采样率
-  ///[level]降噪级别,默认为High
   void init(int sampleRate, {NSLevel level = NSLevel.High}) {
     release();
     _handle = _bindings.webrtc_ns_init(sampleRate, level.index);
+    if (_hasInit) {
+      _ensureBuffer(sampleRate ~/ 50); // typical 20ms frame
+    }
   }
 
-  ///释放
   void release() {
     if (_hasInit) {
       _bindings.webrtc_ns_destroy(_handle!);
       _handle = null;
     }
+    if (_buffer != null) {
+      ffi.calloc.free(_buffer!);
+      _buffer = null;
+      _bufferSamples = 0;
+    }
   }
 
-  ///处理byte数组,如果没有初始化,或者处理失败返回原始数据
-  ///如果处理成功 返回处理后的数据
+  void _ensureBuffer(int samples) {
+    if (_bufferSamples >= samples) return;
+    if (_buffer != null) {
+      ffi.calloc.free(_buffer!);
+    }
+    _buffer = ffi.calloc<Int16>(samples);
+    _bufferSamples = samples;
+  }
+
+  /// Processes PCM data in-place. Zero allocations after warm-up.
+  ///
+  /// [pcmData] is interleaved 16-bit little-endian PCM. The processed audio
+  /// overwrites the input buffer. Returns true on success, false if not
+  /// initialized or processing failed.
+  bool processInPlace(Uint8List pcmData) {
+    if (!_hasInit) return false;
+
+    final int samples = pcmData.length ~/ 2;
+    _ensureBuffer(samples);
+
+    // Zero-copy view of input as Int16
+    final Int16List input =
+        pcmData.buffer.asInt16List(pcmData.offsetInBytes, samples);
+    final Int16List native = _buffer!.asTypedList(samples);
+
+    // Copy to pre-allocated native buffer
+    native.setAll(0, input);
+
+    final int ret = _bindings.webrtc_ns_process(_handle!, _buffer!, samples);
+    if (ret != 0) return false;
+
+    // Copy processed data back to the input buffer
+    final Uint8List nativeBytes =
+        Uint8List.view(native.buffer, 0, pcmData.length);
+    pcmData.setAll(0, nativeBytes);
+    return true;
+  }
+
+  /// Processes PCM bytes and returns processed data.
+  /// Prefer [processInPlace] for real-time audio to avoid allocations.
   Uint8List process(Uint8List bytes) {
-    if (_hasInit) {
-      return ffi.using((arena) {
-        Int16List shorts = _bytesToShort(bytes);
-        int length = shorts.length;
-        final ptr = arena<Int16>(length);
-        ptr.asTypedList(length).setAll(0, shorts);
-        int ret = _bindings.webrtc_ns_process(_handle!, ptr, length);
-        if (ret == 0) {
-          return _shortToBytes(ptr.asTypedList(length));
-        } else {
-          return bytes;
-        }
-      });
-    }
-    return bytes;
-  }
+    if (!_hasInit) return bytes;
 
-  static Int16List _bytesToShort(Uint8List bytes) {
-    Int16List shorts = Int16List(bytes.length ~/ 2);
-    for (int i = 0; i < shorts.length; i++) {
-      shorts[i] = (bytes[i * 2] & 0xff | ((bytes[i * 2 + 1] & 0xff) << 8));
-    }
-    return shorts;
-  }
-
-  static Uint8List _shortToBytes(Int16List shorts) {
-    Uint8List bytes = Uint8List(shorts.length * 2);
-    for (int i = 0; i < shorts.length; i++) {
-      bytes[i * 2] = (shorts[i] & 0xff);
-      bytes[i * 2 + 1] = (shorts[i] >> 8 & 0xff);
+    final Uint8List copy = Uint8List.fromList(bytes);
+    if (processInPlace(copy)) {
+      return copy;
     }
     return bytes;
   }
