@@ -59,7 +59,7 @@ final class WebrtcNS {
   void _ensureBuffer(int samples) {
     if (_bufferSamples == samples && _buffer != null) return;
     if (_buffer != null) {
-      ffi.calloc.free(_buffer!);
+      ffi.malloc.free(_buffer!);
     }
     _buffer = ffi.malloc<Int16>(samples);
     _bufferSamples = samples;
@@ -68,7 +68,7 @@ final class WebrtcNS {
   ///释放预分配内存
   void freeBuffer() {
     if (_buffer != null) {
-      ffi.calloc.free(_buffer!);
+      ffi.malloc.free(_buffer!);
       _buffer = null;
       _bufferSamples = 0;
     }
@@ -85,7 +85,8 @@ final class WebrtcNS {
     _ensureBuffer(samples);
     Uint8List copyData = Uint8List.fromList(pcmData);
     // Zero-copy view of input as Int16
-    final Int16List input = copyData.buffer.asInt16List(copyData.offsetInBytes, samples);
+    final Int16List input =
+        copyData.buffer.asInt16List(copyData.offsetInBytes, samples);
     final Int16List native = _buffer!.asTypedList(samples);
 
     // Copy to pre-allocated native buffer
@@ -98,7 +99,8 @@ final class WebrtcNS {
     }
 
     // Copy processed data back to the input buffer
-    final Uint8List nativeBytes = Uint8List.view(native.buffer, 0, copyData.length);
+    final Uint8List nativeBytes =
+        Uint8List.view(native.buffer, 0, copyData.length);
     copyData.setAll(0, nativeBytes);
     return copyData;
   }
